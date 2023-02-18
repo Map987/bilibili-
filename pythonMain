@@ -1,0 +1,201 @@
+#coding=utf-8
+import json
+import requests
+import time
+
+# 待监控的转盘出货列表监控，如果有人出货了会使用pushplus推送一条消息
+lottery_dict = {
+    #装机
+    "46": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_331ada5d-81de-11ed-9251-a4ae12675bc2",
+    #万福
+    "47": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_11bfc78d-80c6-11ed-9251-a4ae12675bc2",
+    #双琴
+    "48": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_5eb6f7dd-71f6-11ed-9251-a4ae12675bc2",
+    #乐宝
+    "49": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_43022223-8060-11ed-9251-a4ae12675bc2",
+    #长安
+    "50": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_a3464420-859a-11ed-9251-a4ae12675bc2",
+    #装备
+    "51": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_8988a461-86a7-11ed-9251-a4ae12675bc2",
+    # 颜色
+    "52": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_0b9242be-899a-11ed-9251-a4ae12675bc2",
+    # 迪迪
+    "53": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_61bdecd5-867c-11ed-9251-a4ae12675bc2",
+    # 家乡
+    "54": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_37885cc4-8d96-11ed-9251-a4ae12675bc2",
+    # 基底
+    "55": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_68aaa267-8041-11ed-9251-a4ae12675bc2",
+    # 动画
+    "56": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_bc63b88a-8ea5-11ed-9251-a4ae12675bc2",
+    # JD
+    "57": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_8d7b3cb9-9729-11ed-9251-a4ae12675bc2",
+    # VIVO
+    "58": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_90a79051-931d-11ed-9251-a4ae12675bc2",
+    # TOYOTA
+    "59": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_ae42c274-963c-11ed-9251-a4ae12675bc2",
+    # 伊利
+    "60": "https://api.bilibili.com/x/lottery/win/list?sid=newLottery_a69b2c9a-9177-11ed-9251-a4ae12675bc2"
+}
+
+# 监控的转盘抽奖次数监控，如果转盘防水会通过pushplus推送
+lottery_num_dict = {
+
+        #装机
+    "46": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_331ada5d-81de-11ed-9251-a4ae12675bc2",
+    #万福
+    "47": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_11bfc78d-80c6-11ed-9251-a4ae12675bc2",
+    #双琴
+    "48": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_5eb6f7dd-71f6-11ed-9251-a4ae12675bc2",
+    #乐宝
+    "49": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_43022223-8060-11ed-9251-a4ae12675bc2",
+    "50": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_a3464420-859a-11ed-9251-a4ae12675bc2",
+    #装备
+    "51": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_8988a461-86a7-11ed-9251-a4ae12675bc2",
+    # 颜色
+    "52": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_0b9242be-899a-11ed-9251-a4ae12675bc2",
+    # 迪迪
+    "53": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_61bdecd5-867c-11ed-9251-a4ae12675bc2",
+    # 家乡
+    "54": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_37885cc4-8d96-11ed-9251-a4ae12675bc2",
+    # 基底
+    "55": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_68aaa267-8041-11ed-9251-a4ae12675bc2",
+    # 动画
+    "56": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_bc63b88a-8ea5-11ed-9251-a4ae12675bc2",
+    # JD
+    "57": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_8d7b3cb9-9729-11ed-9251-a4ae12675bc2",
+    # VIVO
+    "58": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_90a79051-931d-11ed-9251-a4ae12675bc2",
+    # TOYOTA
+    "59": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_ae42c274-963c-11ed-9251-a4ae12675bc2",
+    # 伊利
+    "60": "https://api.bilibili.com/x/lottery/mytimes?sid=newLottery_a69b2c9a-9177-11ed-9251-a4ae12675bc2"
+}
+
+#b站的cookie
+header = {
+    'cookie': ""
+}
+
+#pushplus推送消息，去微信上申请
+tokenD = ''
+
+# 返回抽奖结果，最新一条记录
+def lottery_result(url):
+    if url == "None":
+        return "None"
+    result = requests.get(url)
+    return deal_json(result)
+
+
+# {"code":170001,"message":"活动不存在","ttl":1,"data":null}
+# {"code":0,"message":"0","ttl":1,"data":{"times":0}}
+# 次数,返回次数
+def lottery_num(url):
+    if url is None:
+        return "None"
+    num = requests.get(url, headers=header)
+    j_ss = json.loads(num.text)
+    if "data" in j_ss and j_ss['message'] == '0' and 'times' in j_ss['data']:
+        return j_ss['data']['times']
+    else:
+        return "None"
+
+
+def time_trans(ctime):
+    ctime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ctime))
+    return ctime
+
+
+# 处理json,获得中奖名单列表第一位的完整信息,存在则返回，不存在返回None
+# param:传入要解析的json
+def deal_json(json_obj):
+    j_s = json.loads(json_obj.text)
+    if "data" in j_s and j_s['data'] is not None:
+        return j_s['data'][0]
+    else:
+        return "None"
+
+
+if __name__ == '__main__':
+
+    try:
+        d_comparison = {}
+        # 次数
+        d_num_exchange = {}
+        for key, value in lottery_dict.items():
+            print("key:" + key)
+            s = lottery_result(value)
+            num = lottery_num(lottery_num_dict[key])
+            if s == "None":
+                d_comparison[key] = "None"
+                # d_num_exchange[key] = "None"
+            else:
+                d_comparison[key] = s['ctime']
+            d_num_exchange[key] = num   
+            time.sleep(3)
+        while True:
+            ctime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            print("------------------------------次数检测-------------------------------")
+            print(ctime)
+            # 判断次数变化
+            for index, value in lottery_num_dict.items():
+                av = lottery_num(value)
+                if av == "None":
+                    print(index + "活动不存在或结束")
+                else:
+                    if av != d_num_exchange[index]:
+                        requests.get('http://www.pushplus.plus/send/' + tokenD,
+                                     params={'title': str(index) + "号盘子有水",
+                                             'content': "次数为：" + str(av)}
+                                     )
+                        requests.get('http://www.pushplus.plus/send/' + tokenS,
+                                     params={'title': str(index) + "号盘子有水",
+                                             'content': "次数为：" + str(av)}
+                                     )
+                        requests.get('http://www.pushplus.plus/send/' + tokenH,
+                                     params={'title': str(index) + "号盘子有水",
+                                             'content': "次数为：" + str(av)}
+                                     )
+                        d_num_exchange[index] = av
+                        print("---sleep2,有水-----")
+                        time.sleep(2)
+                    else: 
+                        print(index + " (无变化)次数为：")
+                        print(av)
+            print("==========================次数检测结束==================================")
+            for index, value in lottery_dict.items():
+                # json数据
+                first_lottery = lottery_result(value)
+                if first_lottery == "None":
+                    print(index + " 号盘:暂未出结果 || 活动以结束")
+                else:
+                    # 相关数据
+                    activity_name = first_lottery['award_info']['activity_name']
+                    lottery_name = first_lottery['name']
+                    lottery_gift_name = first_lottery['gift_name']
+                    # 格式化后的
+                    lottery_time = time_trans(first_lottery['ctime'])
+                    if d_comparison[index] == "None" or d_comparison[index] < first_lottery['ctime']:
+                        title = index + lottery_name
+                        content = lottery_time + " " + lottery_gift_name + " " + lottery_name
+                        requests.get('http://www.pushplus.plus/send/' + tokenD,
+                                     params={'title': title,
+                                             'content': content
+                                             }
+                                     )
+                        print("发送信息给vx")
+                        d_comparison[index] = first_lottery['ctime']
+                    else:
+                        print(index + activity_name + " :未出新货")
+                        print(lottery_name + " " + lottery_gift_name + " " + lottery_time)
+                        print("------------------------------------------")
+            print("==========================一轮结束，sleep 25 seconds===============================")
+            time.sleep(23)
+    except Exception as e:
+        print(repr(e))
+        print("except")
+        requests.get('http://www.pushplus.plus/send/' + tokenD,
+                     params={'title': "程序异常",
+                             'content': "error"
+                             }
+                     )
